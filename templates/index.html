@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Neo4j NLP Interface</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/textfit/3.0.3/textFit.min.js"></script>
+
+
+	
+	<style>
+	#graph-container {
+		width: 100%;
+		height: 500px;
+		background-color: #FFFFFF;
+	}
+	
+	#loading-icon {
+	  position: fixed;
+	  top: 50%;
+	  left: 50%;
+	}
+	
+	.carousel-control-prev,
+	.carousel-control-next {
+	      background-color: #007bff;
+		  width: fit-content;
+		  height: fit-content;
+		  margin-top: 45px;
+		  margin-left: 14px;
+		  margin-right: 14px;
+		  border: 1px solid transparent;
+		padding: 0.375rem 0.75rem;
+		font-size: 1rem;
+		line-height: 1.5;
+		border-radius: 0.25rem;
+		transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+		  
+	}
+
+	.carousel-wrapper {
+		margin-bottom: 20px;
+	}
+	
+	.btn {
+		margin-top: 20px;
+	}
+	
+	.edge-label {
+	  white-space: nowrap;
+	  overflow: hidden;
+	  text-overflow: ellipsis;
+	  max-width: 100px; /* Adjust the maximum width as needed */
+	}
+	</style>
+	</head>
+	<body>
+		
+		<div class="container mt-4">
+			<h1 class="text-center mb-4">Neo4j NLP Interface</h1>
+			<div class="input-group mb-3">
+				<span class="input-group-text">neo4j.driver</span>
+				<input type="text" id="neo4j_driver" class="form-control mr-2" name="" value = "bolt://localhost:7687">
+				<span class="input-group-text">User Name</span>
+				<input type="text" id="username" class="form-control mr-2" name="" value = "neo4j">
+				<span class="input-group-text">Password</span>
+				<input type="password" id="password" class="form-control mr-2" name="" value = "projects">
+			</div>
+			
+
+			<!-- Your HTML content -->
+			<div id="output"></div>
+						
+			<div class="row">
+				<div class="col-md-12">
+					<form id="query-form">
+						<div class="input-group mb-3">
+							<input type="text" id="myInput" name="myInput" class="form-control" placeholder="Enter your question">
+						</div>
+						<button type="submit" name="submit2" id="submit" class="btn btn-primary">Submit</button>
+					</form>
+				</div>
+			</div>
+
+
+			
+			<!-- Nav tabs -->
+			<ul class="nav nav-pills" role="tablist">
+			  <li class="active nav-item"><a href="#graphtab" role="tab" class="nav-link" data-toggle="tab">Graph</a></li>
+			  <li class="nav-item"><a href="#summarytab" role="tab" class="nav-link" data-toggle="tab">Summary</a></li>		  
+			</ul>
+			</li>
+
+			<!-- Tab panes -->
+			<div class="tab-content">
+			  <div class="tab-pane active" id="graphtab">
+				<div class="row mt-4">
+					<div class="col-md-12">
+					
+					<div id="loading-icon" class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem; display: none;">
+					  <span class="sr-only">Loading...</span>
+					</div>
+						<div id="graph-container"></div>
+					</div>
+				</div>
+			  </div>
+			  <div class="tab-pane" id="summarytab">
+				<div class="row mt-4">
+						<div class="col-md-12">
+						
+						<div id="loading-icon" class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem; display: none;">
+						  <span class="sr-only">Loading...</span>
+						</div>
+							<div id="table-container" style="margin: 25px 50px; padding: 10px; border: 1px solid black;"></div>
+						</div>
+					</div>
+			  </div>
+			</div>
+			
+
+		</div>
+		<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+		<script src="https://unpkg.com/neo4j-driver"></script>
+		<script src="https://unpkg.com/compromise"></script>
+		<script>
+		
+
+			$(document).ready(function() {
+				$('#submit').click(function(event) {
+					event.preventDefault();
+					// Show the loading icon
+					$('#loading-icon').show();
+					
+					var selectedDropdown = $('#dropdown option:selected').val();
+					var selected_catDropdown = $('#dropdown_cat option:selected').val();
+					var selectedDropdown1 = $('#dropdown1 option:selected').val();
+					var selectedDropdown2 = $('#dropdown2 option:selected').val();
+					var selectedDropdown3 = $('#dropdown3 option:selected').val();
+					var ques = $('#myInput').val();
+					
+					var nlp_query = '';
+					var qtype = '';
+					var first_item_name_ = '';
+					var second_item_name_ = '';
+					var reltn_ = '';
+					var selected_cat = '';
+					
+					if (ques) {
+						nlp_query = ques;
+						qtype = 'Type 3'
+						first_item_name_ = "";
+						second_item_name_ = "";
+						reltn_ = "";
+					
+					}
+					else {
+						// No valid combination of dropdown selections, show an error message or take appropriate action
+						alert("Error: Please complete a question to continue");
+						$('#loading-icon').hide();
+						return;
+					}
+            
+					console.log("Submit clicked!");
+					console.log(nlp_query);
+					console.log(selected_cat);
+					console.log(first_item_name_);
+					
+					// Subject - Object - Predicate
+					
+					/*
+					 // Use compromise to parse the sentence
+					  var nlpResult = nlp(ques);
+					  // Extract the subject, object, and predicate
+					  var subject = nlpResult.match("#Noun").text();
+
+					  var object = nlpResult.match("#Noun").lastTerm().text();
+					  
+					  // Remove the first word from the object
+					  var objectWords = object.split(" ");
+					  objectWords.shift(); // Remove the first word
+					  object = objectWords.join(" ");
+					  var predicate = nlpResult.verbs().out("array")[0];
+					
+					*/
+					
+					//var nlpResult = nlp("Which disease cause Hepatic failure");
+					var nlpResult = nlp(ques);
+					// Extract the subject, object, and predicate
+					 var subject = nlpResult.match("#Noun").text();
+					 var object = nlpResult.match("#Noun").lastTerm().text();
+					 var predicate = nlpResult.verbs().out("array")[0];
+
+					// Function to check if the subject contains a category of drug or disease
+					function subjectContainsCategory(subject) {
+					  // Regular expressions to match drug and disease categories
+					  const drugCategoryRegex = /(?:antibiotics|analgesics|antidepressants|antihistamines|thiazolidinediones)/i;
+					  const diseaseCategoryRegex = /(?:diseases?|conditions?)/i;
+					    // Regular expressions to match disease-related keywords
+					  //const associatedDiseaseRegex = /\(diseases\s+\w+\)/i;
+					  const associatedDiseaseRegex = /(?:diseases?|conditions?)/i;
+					  const diseaseSymptomRegex = /(?:symptoms?)/i;
+
+
+					  // Check if the subject matches the drug or disease category or associated diseases or symptoms of a disease patterns
+					  const drugMatch = subject.match(drugCategoryRegex);
+					  const associatedDiseaseMatch = subject.match(associatedDiseaseRegex);
+					  const diseaseSymptomMatch = subject.match(diseaseSymptomRegex);
+
+					  if (drugMatch) {
+						return { containsCategory: true, categoryType: 'Drug', category: drugMatch[0] };
+					  } else if (associatedDiseaseMatch) {
+						return { containsCategory: true, categoryType: 'AssociatedDisease', category: associatedDiseaseMatch[0] };
+					  } else if (diseaseSymptomMatch) {
+						return { containsCategory: true, categoryType: 'Symptom', category: diseaseSymptomMatch[0] };
+					  } else {
+						return { containsCategory: false};
+					  }
+
+						
+					  
+					}
+					var objectWords = object.split(" ");
+					  objectWords.shift(); // Remove the first word
+					  object = objectWords.join(" ");
+					
+
+					// Check if the subject contains a category of drug or disease
+					const { containsCategory, categoryType, category } = subjectContainsCategory(subject);
+
+					// Output the results
+					console.log("Subject:", subject);
+					console.log("Object:", object);
+					console.log("Predicate:", predicate);
+					console.log("Subject contains a category of drug", containsCategory);
+					console.log("Matched Category:", category);
+					console.log("Category Type:", categoryType);
+					
+
+					
+					var neo4j_driver = $('#neo4j_driver').val();
+					var username = $('#username').val();
+					var password = $('#password').val();
+					
+					
+					
+					if (neo4j_driver === '') {
+						alert("Error: Please enter neo4j_driver");
+						$('#loading-icon').hide();
+						return;
+					}
+					
+					if (username === '') {
+						alert("Error: Please enter Neo4J Username");
+						$('#loading-icon').hide();
+						return;
+					}
+					
+					if (password === '') {
+						alert("Error: Please enter Neo4J Password");
+						$('#loading-icon').hide();
+						return;
+					}
+					
+					
+					console.log(nlp_query);
+					console.log("selected_cat",selected_cat);
+					
+					$.ajax({
+						url: '/convert_nlp_to_cypher',
+						method: 'POST',
+						data: { nlp_query: nlp_query,
+								obj_text: object,
+								qtype: containsCategory,
+								selected_cat: category,
+								predicate: predicate
+								},
+						success: function(response) {
+							console.log("response----",response)
+							if (response === '') {
+							// Display an error message if the response is empty
+							alert("Error: The system was unable to fetch the information from the database. The information is not available in the database. Please contact the administrator.");
+							$('#loading-icon').hide();
+						  } else {
+							drawGraph(response,neo4j_driver,username,password);
+						  }
+						}, error: function() {
+					alert("An error occurred. Please try again later.");
+					$('#loading-icon').hide();
+					},
+				  complete: function() {
+					// Hide the loading icon when the request is complete
+					$('#loading-icon').hide();
+				  }
+					});
+				});
+				
+				
+				function drawGraph(cypher_query,neo4j_driver,username,password) {
+				console.log(cypher_query)
+				// Show the loading icon
+				$('#loading-icon').show();
+				
+				// Add your code here to execute the cypher query and draw the graph
+				var graph_container = document.getElementById('graph-container');
+			
+
+				// Trying to get Actual Data 	
+				  var nodes = [];
+				  var edges = [];
+					console.log("neo4j_driver,username,password",neo4j_driver,username,password)
+				  var driver = neo4j.driver(
+					neo4j_driver,
+					neo4j.auth.basic(username,password)
+				  );
+
+				  var session = driver.session();
+					session.run(cypher_query)
+					  .then(function (result) {
+						console.log("result", result);
+						
+						if (result.records.length === 0) {
+						// Raise an alert if the result is empty
+						alert("Error: The system was unable to fetch the information from the database. The information is not available in the database. Please contact the administrator.");
+						$('#loading-icon').hide();
+						return;
+					  }
+						
+						var nodes = [];
+						var edges = [];
+						result.records.forEach(function (record) {
+						  console.log(record)
+						var data = []
+						
+						function getNode(record, nodeKey, label, group) {
+						  const node = { id: record.get(nodeKey).identity.toNumber(), label: record.get(nodeKey).properties.Name, group };
+						  const index = nodes.findIndex(n => n.id === node.id);
+						  if (index === -1) {
+							nodes.push(node);
+						  }
+						  return node;
+						}
+
+						function createEdge(record, fromKey, toKey, label, direction) {
+						  const from = record.get(fromKey).identity.toNumber();
+						  const to = record.get(toKey).identity.toNumber();
+						  const edgeDirection = direction === 'to' ? 'to' : 'undirected';
+						  return { from, to, label, font: { align: "middle" }, length: 150, arrows: { to: { enabled: edgeDirection === 'to' } } };
+						}
+
+						
+					  
+						if (record.has("e") && record.has("c") && record.has("r") && record.has("r_inv")) {
+						  console.log("Node:", record.get("e").properties); // Check node properties
+						  console.log("Edge:", record.get("c").properties); // Check edge properties
+						  console.log("Relation:", record.get("r").properties); // Check Relation properties
+						  console.log("Inv_Relation:", record.get("r_inv").properties); // Check Inverse_Relation properties
+
+						  const node = getNode(record, 'e','e', 'e');
+						  const companyNode = getNode(record,'c', 'c', 'c');
+
+						  const edge = createEdge(record, 'e', 'c', record.get('r').properties.type, record.get('r').type === 'Relation' ? 'to' : 'undirected');
+						  const edge_inv = createEdge(record, 'c', 'e', record.get('r_inv').properties.inverseType, record.get('r').type === 'Relation' ? 'to' : 'undirected');
+
+						  edges.push(edge, edge_inv);
+						}
+						  
+						  
+						  
+						  if (record.has("e") && record.has("c") && record.has("r") && record.has("dr") && record.has("f")) {
+							  console.log("Node:", record.get("e").properties); // Check node properties
+							  console.log("Node:", record.get("f").properties); // Check node properties
+							  console.log("Edge:", record.get("c").properties); // Check edge properties
+							  console.log("Relation:", record.get("r").properties); // Check Relation properties
+							  console.log("dr_Relation:", record.get("dr").properties); // Check Inverse_Relation properties
+
+							  const node = getNode(record, 'e', 'e', 'e');
+							  const secNode = getNode(record, 'c', 'c', 'c');
+							  const thirdNode = getNode(record, 'f', 'f', 'f');
+
+							  const edge = createEdge(record, 'e', 'c', record.get('r').properties.type, record.get('r').type === 'Relation' ? 'to' : 'undirected');
+							  const secEdge = createEdge(record, 'e', 'f', record.get('dr').properties.type,record.get('dr').type === 'Relation' ? 'to' : 'undirected');
+							  
+
+							edges.push(edge, secEdge);
+							}
+							
+							 if (record.has("n") && record.has("c") && record.has("r") && record.has("dr") && record.has("f")) {
+							  console.log("Node:", record.get("n").properties); // Check node properties
+							  console.log("Node:", record.get("f").properties); // Check node properties
+							  console.log("Edge:", record.get("c").properties); // Check edge properties
+							  console.log("Relation:", record.get("r").properties); // Check Relation properties
+							  console.log("dr_Relation:", record.get("dr").properties); // Check Inverse_Relation properties
+
+							  const node = getNode(record, 'n', 'n', 'n');
+							  const secNode = getNode(record, 'c', 'c', 'c');
+							  const thirdNode = getNode(record, 'f', 'f', 'f');
+
+							  const edge = createEdge(record, 'n', 'c', record.get('r').properties.type, record.get('r').type === 'Relation' ? 'to' : 'undirected');
+							  const secEdge = createEdge(record, 'f', 'c', record.get('dr').properties.type,record.get('dr').type === 'Relation' ? 'to' : 'undirected');
+							  
+							
+							// Check if edge already exists before pushing
+							  const edgeExists = edges.findIndex(e => e.from === edge.from && e.to === edge.to) !== -1;
+							  const secEdgeExists = edges.findIndex(e => e.from === secEdge.from && e.to === secEdge.to) !== -1;
+
+							  if (!edgeExists) {
+								edges.push(edge);
+							  }
+
+							  if (!secEdgeExists) {
+								edges.push(secEdge);
+							  }
+							}
+						
+						
+						
+						})
+
+						
+						
+						data = {
+						  nodes: nodes,
+						  edges: edges
+						};
+						
+						console.log("data:::::", data); // Check data var
+						
+						var answertxt = "";
+						
+						var divElement = document.getElementById("table-container"); // Create a new <div> element
+						// Clear the existing content of the 'divElement'
+						divElement.innerHTML = '';
+						var pElement = document.createElement("p");
+						var ulElement = document.createElement("ul");   // Create a new <ul> (unordered list) element
+						
+						for (var i = 0; i < (data.nodes.length); i++) {
+						  if (data.nodes[i].group === "c") {
+							var pNode = document.createElement("p"); // Create a new <p> element
+							pNode.textContent = data.nodes[i].label + " is associated with the following."; // Set the text content of the <p> to the label
+							divElement.appendChild(pNode); // Append the <p> element to the container)
+						  }
+						  else{
+						  var liElement = document.createElement("li"); // Create a new <li> (list item) element
+							  liElement.textContent = data.nodes[i].label;  // Set the text content of the <li> to the label
+							  ulElement.appendChild(liElement);            // Append the <li> to the <ul>
+						}
+						}
+						divElement.appendChild(ulElement); // Append the <ul> to the <div>
+						//document.body.appendChild(divElement);
+						console.log(answertxt);
+				
+
+
+						var options = {
+						  nodes: {
+							shape: 'circle',
+							width: "50%",
+							widthConstraint: {
+							  minimum: 50,
+							  maximum: 79
+							}
+						  },
+						  groups: {
+							e: {
+							  color: { background: '#FDC761' }
+							},
+							c: {
+							  color: { background: '#FD7961' }
+							},
+							f: {
+							  color: { background: '#c994f2' }
+							},
+							n: {
+							  color: { background: '#FDC761' }
+							}
+						  },
+						  edges: {
+							scaling: {
+							  label: {
+								enabled: true,
+								min: 5,
+								max: 10
+							  }
+							},
+							font: {
+							  size: 14, // Adjust the font size of the edge labels
+							  align: 'middle'
+							},
+							smooth: {
+							  enabled: true, // Enable the smooth edges
+							  type: 'dynamic' // Choose the dynamic type for automatic fitting
+							}
+						  },
+						  layout: {
+							hierarchical: false // Set to true if you want a hierarchical layout
+						  },
+						  physics: {
+							enabled: true,
+							solver: 'forceAtlas2Based',
+							forceAtlas2Based: {
+							  gravitationalConstant: -65,
+							  centralGravity: 0.02,
+							  springLength: 0,
+							  springConstant: 0.01,
+							  damping: 0.4,
+							  avoidOverlap: 0.9
+							},
+							maxVelocity: 50,
+							minVelocity: 0.1,
+							timestep: 0.5,
+							stabilization: {
+							  enabled: true,
+							  iterations: 2000,
+							  updateInterval: 100,
+							  onlyDynamicEdges: false,
+							  fit: false // Adjust the graph to fit the view
+							}
+						  }
+						};
+
+
+
+
+
+
+
+					var network = new vis.Network(graph_container, data, options);
+					 // Hide the loading icon when the graph is loaded
+					network.on("afterDrawing", function() {
+					  $('#loading-icon').hide();
+					});
+									
+					  })
+					.catch(function (error) {
+					  console.log(error);
+					  alert("Error: Unable to parse the Cypher Query",error);
+					  $('#loading-icon').hide();
+					})
+					.then(function () {
+					  session.close();
+					})
+					.then(function () {
+					  driver.close();
+					});
+					
+					}
+					
+		
+					
+		});
+	</script>
+</body>
+</html>
+
