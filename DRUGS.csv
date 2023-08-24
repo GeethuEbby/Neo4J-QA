@@ -1,0 +1,6 @@
+Template,Cypher
+Are there any specific medications that can result in,"MATCH (e:First_Item)-[r:Relation]->(c:Second_Item) WHERE c.Name =~ '{first_item_name_}' AND r.type IN ['may cause', 'is a subtype of'] MATCH (e) -[dr:Relation]->(f) WHERE dr.type IN ['belongs to the drug family of'] OPTIONAL MATCH (e)<-[r_inv:InverseRelation]-(c) RETURN e, r, c, r_inv"
+Which Antibiotics may cause ,"MATCH (e:First_Item)-[r:Relation{type: '{reltn_}'}]->(c:Second_Item) WHERE c.Name =~ '{first_item_name_}' MATCH (e)-[dr:Relation]->(f) WHERE f.Name =~ '{second_item_name_}' RETURN e, r, c, dr, f"
+Which drugs are associated with,"MATCH (e:First_Item)-[r:Relation]->(c:Second_Item) WHERE c.Name =~ '{first_item_name_}' AND r.type IN ['may cause', 'is a subtype of'] MATCH (e) -[dr:Relation]->(f) WHERE dr.type IN ['belongs to the drug family of'] OPTIONAL MATCH (e)<-[r_inv:InverseRelation]-(c) RETURN e, r, c, r_inv"
+What Thiazolidinediones may cause,"MATCH (e:First_Item)-[r:Relation{type: '{reltn_}'}]->(c:Second_Item) WHERE c.Name =~ '{first_item_name_}' MATCH (e)-[dr:Relation]->(f) WHERE f.Name =~ '{second_item_name_}' RETURN e, r, c, dr, f"
+What Analgesics may cause,"MATCH (e:First_Item)-[r:Relation{type: '{reltn_}'}]->(c:Second_Item) WHERE c.Name =~ '{first_item_name_}' MATCH (e)-[dr:Relation]->(f) WHERE f.Name =~ '{second_item_name_}' RETURN e, r, c, dr, f"

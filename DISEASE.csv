@@ -1,0 +1,4 @@
+Template,Cypher
+Can you identify any diseases that often coincide with ,"MATCH (e:First_Item)-[r:Relation]->(c:Second_Item) WHERE c.Name =~ '{first_item_name_}' AND NOT (e)-[:Relation {type: 'belongs to the drug family of'}]->() OPTIONAL MATCH (e)<-[r_inv:InverseRelation]-(c) RETURN e, r, c, r_inv"
+Which diseases are commonly associated with ,"MATCH (e:First_Item)-[r:Relation]->(c:Second_Item) WHERE c.Name =~ '{first_item_name_}' AND NOT (e)-[:Relation {type: 'belongs to the drug family of'}]->() OPTIONAL MATCH (e)<-[r_inv:InverseRelation]-(c) RETURN e, r, c, r_inv"
+Which symptoms are commonly associated with,"MATCH (e:First_Item)-[r:Relation]->(c:Second_Item) WHERE e.Name =~ '{first_item_name_}' AND NOT (e)-[:Relation {type: 'belongs to the drug family of'}]->() OPTIONAL MATCH (e)<-[r_inv:InverseRelation]-(c) RETURN e, r, c, r_inv"
